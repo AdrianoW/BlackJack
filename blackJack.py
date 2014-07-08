@@ -13,22 +13,25 @@ from math import ceil
 
 # global variables - defines
 SUITE_NAMES = ['Spades', 'Hearts', 'Clubs', 'Diamonds']
-FACE_NAMES = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'Jack', 'Queen', 'King', 'Ace']
+FACE_NAMES = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'Jack', 
+                                                  'Queen', 'King', 'Ace']
 PLAYER_HUMAN = 1
 PLAYER_CPU = 2
 
 
-
 class Card(object):
-    """ class to hold card face and suite.
+    """ Class to hold card face and suite.
     """
     
     def __init__(self, face, suite, face_down = False) :
         """ Init the card with face and suite.
         
         Args:
-            face - the value of the card
-            suite - one of the 4 suites
+            face (str): The value of the card.
+            suite(str): One of the 4 suites.
+            face_down (bool, optional): If the card is face down (True), 
+                it will not be counted. Defaults to False.
+                
         """
         self.face = face
         self.suite = suite
@@ -36,7 +39,7 @@ class Card(object):
     
     def __str__(self):
         """ Prety representation of the card. If the card is face_down, it will 
-            show nothing        
+            show unknown card.     
         """
         if self.face_down:
             return "unknown card"
@@ -44,6 +47,7 @@ class Card(object):
             return ('{0} of {1}'.format(self.face, self.suite))
     
     def flip_card(self):
+        """ Toggle the face_down property. """
         self.face_down = not self.face_down 
 
 
@@ -54,7 +58,9 @@ class Deck(object):
         """ Initiate the class.
         
         Args:
-            deckNum = create more than one deck of cards. Default = 1
+            deckNum (int, optional): create more than one deck of cards. 
+                Defaults to 1.
+                
         """
         self.stack = []
         self.deck_num = deck_num
@@ -71,7 +77,9 @@ class Deck(object):
         """ Shuffle Cards.
         
         Args:
-            restart: If it should restart deck or shuffle the current deck
+            restart (bool, optional): If it should restart deck or just shuffle  
+                current deck. Defaults to True.
+            
         """
         
         # put all cards back and shuffle
@@ -81,18 +89,20 @@ class Deck(object):
         shuffle(self.stack)
             
     def get_card(self):
-        """ Get a card from the deck """
+        """ Get a card from the deck. """
         return self.stack.pop()
         
 class Player(object):
     """ Control player cards and moves. """
 
     def __init__(self, player_name, player_type=PLAYER_HUMAN):
-        """ Set inital vars 
+        """ Set inital vars. 
         
         Args:
-            player_type: Human prompts for play, CPU wil not
-            player_name: Will print this name
+            player_name (str): Will print this name.
+            player_type (int, optional): Human prompts for play, CPU wil not.
+                defaults to PLAYER_HUMAN (1).
+            
         """
         self.player_type = player_type
         self.player_name = player_name
@@ -118,7 +128,8 @@ class Player(object):
             if c.face in ['Jack', 'Queen', 'King']:
                 total += 10
             elif c.face == 'Ace':
-                if (total+10)>21:
+                # TODO: enhance the logic for Aces
+                if (total+11)>21:
                     total += 1
                 else:
                     total += 11
@@ -154,28 +165,29 @@ class Player(object):
 class Game(object):
     """ game class that will control de game flow """
      
+    def __init__(self):   
+         # variables
+        self.players = [] # players list
+        self.cur_player = 0 # current player
+        self.player_standing = 0
+        self.num_player_out = 0
+        
+        # game states
+        self.ST_INIT_GAME = 1
+        self.ST_INIT_ROUND = 2
+        self.ST_PLAY = 3
+        self.ST_END_ROUND  = 4
+        self.ST_QUIT = 5
     
-    # variables
-    players = [] # players list
-    cur_player = 0 # current player
-    player_standing = 0
-    num_player_out = 0
-    
-    # game states
-    ST_INIT_GAME = 1
-    ST_INIT_ROUND = 2
-    ST_PLAY = 3
-    ST_END_ROUND  = 4
-    ST_QUIT = 5
-    
-    def __init__(self):
+    def init(self):
         """ Give the welcome, get n. of player, init structures. """
         
         # print welcome
         self.welcome_screen()
         
         # ask amount of players and create them
-        self.player_num = self.get_input('How many players?', min_val=1,max_val=6, default=1)
+        self.player_num = self.get_input('How many players?', 
+                                         min_val=1,max_val=6, default=1)
         for p in range(self.player_num):
             player_name = self.get_input('Player {0} name:'.format(p))
             self.players.append(Player(player_name))
@@ -184,7 +196,8 @@ class Game(object):
         self.players.append(Player('Dealer', PLAYER_CPU))
         
         # number of decks
-        num_decks = self.get_input('How many decks should be used?', min_val=1,max_val=8, default=2)
+        num_decks = self.get_input('How many decks should be used?', 
+                                   min_val=1,max_val=8, default=2)
         self.deck = Deck(num_decks)
         
         # start the game when it is run
@@ -205,7 +218,7 @@ class Game(object):
 
             # the begin of the round
             if self.state==self.ST_INIT_ROUND:        
-                # first player again, shuffle cards, zero hands everybody in
+                # first player again, shuffle cards, zero hands, everybody in
                 self.cur_player = 0
                 self.player_standing = 0
                 self.num_player_out = 0
@@ -242,7 +255,7 @@ class Game(object):
                 for p in self.players:
                     sleep(0.3)
                     p.print_hand()
-                self.get_input("\n\nPress enter to continue...")
+                self.get_input("\n\nPress enter to start Players Round...")
                 
                 # start play round
                 self.state = self.ST_PLAY
@@ -262,12 +275,12 @@ class Game(object):
                             total = p.get_hand_total()
                             if total>21:
                                 print 'BUSTED!!!'
-                                self.get_input("\n\nPress enter to continue...")
+                                self.get_input("\nPress enter to continue...")
                                 break
                                 
                             ans = self.get_input(
-                                  'What do you wand to do? (H)it, (S)tand, S(p)lit'
-                                  ,options=['H','S', 'P'], default='S')
+                              'What do you wand to do? (H)it, (S)tand, S(p)lit'
+                              ,options=['H','S', 'P'], default='S')
                            
                             # switch according to answer
                             if ans=='S':
@@ -281,33 +294,32 @@ class Game(object):
                     else:
                         # check if the dealer needs to play
                         if self.player_standing!=0:
+                            self.get_input('End of PLAYERS ROUND. Press enter for Dealers Round...')                            
+                            
                             # flip dealer card
                             self.players[-1].hand[-1].flip_card()
                             
                             # dealer play
                             while True:                      
-                                # show hand. sleep .5 to give some tention.
+                                # show hand. sleep 1 to give some tension.
                                 self.clear_scr()
                                 p.print_hand('DEALERS ROUND')    
-                                total = p.get_hand_total()                   
-                                sleep(0.5)                                
+                                total = p.get_hand_total()
                                 
                                 # keep getting cards until the dealer gets at least 17
                                 if total<17:
+                                    print 'Dealers Playing'
+                                    sleep(1)               
                                     p.add_card_to_hand(self.deck.get_card())
                                 else:
+                                    sleep(1)
                                     print 'End of dealers round'
-                                    self.get_input("\n\nPress enter to continue...")
+                                    self.get_input(
+                                        "\nPress enter to continue...")
                                     break
                             
                 # close this round
                 self.state = self.ST_END_ROUND
-        
-#                    self.cur_player += 1
-            
-#            # CPU play
-#            if self.state==self.ST_PLAY_CPU:
-                
             
             # finish the round giving or taking money.
             if self.state==self.ST_END_ROUND:
@@ -316,52 +328,59 @@ class Game(object):
                 dealer_num_cards = len(self.players[-1].hand)
                     
                 # show the banner for final results
+                self.clear_scr()
                 print ' ------------------'
                 print '|  ROUND RESULTS   |'
                 print ' ------------------'
                 
                 # do the maths for all human players
                 for p in self.players[:-1]: 
+                    result = 0
                     player_total = p.get_hand_total()
                     print '-- Player: {0}'.format(p.player_name)
                     
-                    if player_total == 21 and len(p.hand)==2:
+                    if p.chip<=0:
+                        print '\tPlayer Out!'
+                    elif player_total == 21 and len(p.hand)==2:
                         # blackjack
                         if dealer_total==21 and dealer_num_cards==2:
                             # draw
-                            p.chip += p.round_bet
+                            result = p.round_bet
                             print '\tDRAW - YOU AND THE DEALER HAVE BLACKJACK!!'
                         else:
-                            p.chip += ceil(p.round_bet*2.5)
+                            result = ceil(p.round_bet*2.5)
                             print '\tWIN - BLACK JACK!!!'
                     elif player_total>21:
                         # player busted
-                        p.chip -= p.round_bet
+                        result = -p.round_bet
                         print '\tLOSE - BUSTED!!!'
                     elif dealer_total>21:
                         # dealer lost
-                        p.chip += p.round_bet*2
+                        result = p.round_bet*2
                         print '\tWON - DEALER BUSTED!!!'
                     elif dealer_total == player_total:
-                        p.chip += p.round_bet
+                        result = 0
                         print '\tDRAW - Player {0} = {1} Dealer'.format(
                                             player_total, dealer_total)
                     elif player_total<dealer_total or (
                                     dealer_total==2 and dealer_num_cards==2):
                         # player lost 
-                        p.chip -= p.round_bet
+                        result = -p.round_bet
                         print '\tLOST - Player {0} < {1} Dealer'.format(
                                             player_total, dealer_total)
-                        
-                        # out of game?                        
-                        if p.chip<=0:
-                            print "Player {0} is out!!!".format(p.player_name)
-                            self.num_player_out += 1
                     else:
                         # player won   
                         print '\tWON - Player {0} > {1} Dealer'.format(
                                             player_total, dealer_total)
-                        p.chip += p.round_bet
+                        result = p.round_bet
+                        
+                    print '\t ${0} Chips'.format(result)
+                    p.chip += result
+                    
+                    # out of game?                        
+                    if p.chip<=0:
+                        print "\tPlayer {0} is out!!!".format(p.player_name)
+                        self.num_player_out += 1
                 
                 # check if there is anybody with money to play
                 if self.num_player_out == self.player_num:
@@ -380,7 +399,7 @@ class Game(object):
                 break
             
     def end(self):
-        pass
+        print 'Thanks for playing. Hope to see you soon!'
     
     def welcome_screen(self):
         """Prints the beaaautiful welcome screen. """
@@ -389,6 +408,7 @@ class Game(object):
         print "   WELCOME TO "
         print "             THE BLACK JACK GAME"
         print " _______________________________________"
+        print " \n\nAt any time press CTRL+C to quit."
         self.get_input('Press enter to start')
     
     def get_input(self, msg, min_val=None, max_val=None, options=None, default= None):
@@ -398,10 +418,10 @@ class Game(object):
         Keep asking until it is valid.
         
         Args:
-            @msg: message to display /n
-            @min: default -1 - min accepted value (equal inclusive) /n
-            @max: default -1 - max accepted value (equal inclusive) /n
-            @options: array with possible options, always capital /n/n
+            @msg: message to display 
+            @min: default -1 - min accepted value (equal inclusive)
+            @max: default -1 - max accepted value (equal inclusive)
+            @options: array with possible options, always capital 
             -1 represent not needed. If any value is set, we only accept numbers, no letters
         """
         comp = ''
@@ -478,10 +498,17 @@ class Game(object):
 
 def main():   
     
-    # create the class and init the game
+    # create the class and init the game    
     game = Game()
-    game.run()
-    game.end()
+    try:
+        game.init()
+        game.run()
+    except KeyboardInterrupt:
+        game.clear_scr()
+        print 'Player QUIT!'
+    finally:
+        if game:
+            game.end()
         
 
 if __name__=='__main__':
