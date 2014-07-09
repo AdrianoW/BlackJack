@@ -109,11 +109,12 @@ class Player(object):
         self.hand = []
         self.chip = 0
         self.round_bet = 0
+        self.num_ace = 0
     
     def add_card_to_hand(self, card):
         """ Add a card to player hand. """       
         self.hand.append(card)
-    
+            
     def clear_hand(self):
         """ Clear players hand structure """
         self.hand[:]=[]
@@ -122,19 +123,29 @@ class Player(object):
         """ calculate hands total of flipped cards"""
         
         total = 0
-        for c in self.hand:
+        
+        # separate regular cards and aces
+        regular = [c for c in self.hand if c.face != 'Ace']
+        aces = [c for c in self.hand if c.face == 'Ace']
+        
+        # sum total without aces
+        for c in regular:
             if c.face_down:
                 continue
             if c.face in ['Jack', 'Queen', 'King']:
                 total += 10
-            elif c.face == 'Ace':
-                # TODO: enhance the logic for Aces
-                if (total+11)>21:
-                    total += 1
-                else:
-                    total += 11
             else:
                 total += int(c.face)
+                
+        # sum according to what is best Ace = 1 or Ace = 11
+        num_ace = len(aces)
+        if aces>0:      
+            # check if there is a bust with one ace as 11
+            if (total+11+(num_ace-1))<22:
+                total += 11+(num_ace-1)
+            else:                
+                total += num_ace
+            
         return total
         
     def print_hand(self, header=None):
@@ -356,7 +367,7 @@ class Game(object):
                         print '\tLOSE - BUSTED!!!'
                     elif dealer_total>21:
                         # dealer lost
-                        result = p.round_bet*2
+                        result = p.round_bet
                         print '\tWON - DEALER BUSTED!!!'
                     elif dealer_total == player_total:
                         result = 0
@@ -385,7 +396,7 @@ class Game(object):
                 # check if there is anybody with money to play
                 if self.num_player_out == self.player_num:
                     print 'All Players Lost !!!'
-                    print ' ------- GAME OVER !!!! -------'
+                    print ' ------- GAME OVER !!!! -------' 
                     pa = self.get_input('Wanna play again?',options=['Y','N'])
                     if pa=='N':
                         self.state = self.ST_QUIT
