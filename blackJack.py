@@ -39,7 +39,7 @@ class Card(object):
     
     def __str__(self):
         """ Prety representation of the card. If the card is face_down, it will 
-            show unknown card.     
+            show unknown card and it won't be counted on total.     
         """
         if self.face_down:
             return "unknown card"
@@ -139,7 +139,11 @@ class Player(object):
                 
         # sum according to what is best Ace = 1 or Ace = 11
         num_ace = len(aces)
-        if aces>0:      
+        if num_ace == 1:
+            # check if one ace is face down
+            if not aces[0].face_down:
+                total += 11
+        elif num_ace>1:            
             # check if there is a bust with one ace as 11
             if (total+11+(num_ace-1))<22:
                 total += 11+(num_ace-1)
@@ -289,9 +293,18 @@ class Game(object):
                                 self.get_input("\nPress enter to continue...")
                                 break
                                 
+                            # options
+                            options=['H','S'] 
+                            msg = 'What do you wand to do? (H)it, (S)tand'
+                            
+                            # check if player may split
+                            if len(p.hand)==2 \
+                                and (p.hand[0].face==p.hand[1].face):            
+                                options += 'P'
+                                msg += ' S(p)lit'
+                                
                             ans = self.get_input(
-                              'What do you wand to do? (H)it, (S)tand, S(p)lit'
-                              ,options=['H','S', 'P'], default='S')
+                               msg, options=options, default='S')
                            
                             # switch according to answer
                             if ans=='S':
