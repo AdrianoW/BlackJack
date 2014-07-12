@@ -9,7 +9,7 @@ Created on Thu Jul  3 22:05:13 2014
 from random import shuffle
 import os
 from time import sleep
-from math import ceil
+from math import floor
 
 # global variables - defines
 SUITE_NAMES = ['Spades', 'Hearts', 'Clubs', 'Diamonds']
@@ -137,19 +137,22 @@ class Player(object):
             else:
                 total += int(c.face)
                 
-        # sum according to what is best Ace = 1 or Ace = 11
+        # sum all the aces as 11
         num_ace = len(aces)
-        if num_ace == 1:
-            # check if one ace is face down
-            if not aces[0].face_down:
-                total += 11
-        elif num_ace>1:            
-            # check if there is a bust with one ace as 11
-            if (total+11+(num_ace-1))<22:
-                total += 11+(num_ace-1)
-            else:                
-                total += num_ace
+        total += 11*num_ace
+        
+        # remove cards that have face_down
+        for i in range(num_ace):
+            if aces[i].face_down:
+                # remove card that should not be counted
+                total -= 11
             
+        # set ace to 1 if needed
+        for i in range(num_ace):
+            if total>21:
+                # this ace should be counted as 1
+                total -= 10
+        
         return total
         
     def print_hand(self, header=None):
@@ -296,13 +299,6 @@ class Game(object):
                             # options
                             options=['H','S'] 
                             msg = 'What do you wand to do? (H)it, (S)tand'
-                            
-                            # check if player may split
-                            if len(p.hand)==2 \
-                                and (p.hand[0].face==p.hand[1].face):            
-                                options += 'P'
-                                msg += ' S(p)lit'
-                                
                             ans = self.get_input(
                                msg, options=options, default='S')
                            
@@ -363,16 +359,14 @@ class Game(object):
                     player_total = p.get_hand_total()
                     print '-- Player: {0}'.format(p.player_name)
                     
-                    if p.chip<=0:
-                        print '\tPlayer Out!'
-                    elif player_total == 21 and len(p.hand)==2:
+                    if player_total == 21 and len(p.hand)==2:
                         # blackjack
                         if dealer_total==21 and dealer_num_cards==2:
                             # draw
                             result = p.round_bet
                             print '\tDRAW - YOU AND THE DEALER HAVE BLACKJACK!!'
                         else:
-                            result = ceil(p.round_bet*2.5)
+                            result = int(floor(p.round_bet*1.5))
                             print '\tWIN - BLACK JACK!!!'
                     elif player_total>21:
                         # player busted
@@ -442,11 +436,11 @@ class Game(object):
         Keep asking until it is valid.
         
         Args:
-            @msg: message to display 
-            @min: default -1 - min accepted value (equal inclusive)
-            @max: default -1 - max accepted value (equal inclusive)
-            @options: array with possible options, always capital 
-            -1 represent not needed. If any value is set, we only accept numbers, no letters
+            msg (str): message to display 
+            min (int, optional): min accepted value (equal inclusive). Defaults to None.
+            max (int, optional):  max accepted value (equal inclusive). Defaults to None.
+            options (str, optional): array with possible options, always capital. Defaults to None
+            default (str, optional): default value to be inserted if player hits enter.
         """
         comp = ''
         # create auxiliary value range
@@ -502,13 +496,14 @@ class Game(object):
         return answer
         
     def clear_scr(self):
-        """helper to clear screen."""
+        """Helper to clear screen."""
         if os.name=='nt':
             os.system('cls') #on windows
         else:
             os.system('clear') # on linux / os x
             
     def ask_bet_value(self, player):
+        """Helper to get bet value """
         if player.player_type == PLAYER_CPU:
             return 
         
@@ -528,11 +523,11 @@ def main():
         game.init()
         game.run()
     except KeyboardInterrupt:
+        # at any time pressing CTRL+C should quit game properly
         game.clear_scr()
         print 'Player QUIT!'
     finally:
-        if game:
-            game.end()
+        game.end()
         
 
 if __name__=='__main__':
